@@ -154,7 +154,7 @@ class AudioManager:
                 frame_size = int(sample_rate * (duration / 1000.0))
                 if streaming_chunk_size % frame_size == 0:
                     return frame_size
-            return int(sample_rate * 0.03)  # default to 30ms if no perfect divisor found
+            return int(sample_rate * 0.01)  # default to 10ms if no perfect divisor found
         else:
             return int(sample_rate * 0.03)  # 30ms for non-streaming
 
