@@ -69,6 +69,7 @@ class UIManager:
 
     def show_error_message(self, message):
         """Display an error message in a QMessageBox."""
+        ConfigManager.log_print(f"Transcription error: {message}")
         QMessageBox.critical(None, "Transcription Error", message)
 
     def show_settings_with_error(self, error_message: str):

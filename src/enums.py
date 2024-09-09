@@ -14,11 +14,6 @@ class ProfileState(Enum):
     TRANSCRIBING = 2
 
 
-class TranscribingState(Enum):
-    IDLE = 0
-    TRANSCRIBING = 1
-
-
 class AudioManagerState(Enum):
     STOPPED = 0
     IDLE = 1
