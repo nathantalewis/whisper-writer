@@ -184,7 +184,7 @@ class SettingsWindow(QWidget):
                 'show_status_window', 'noise_on_completion'
             ],
             'recording_options': [
-                'sound_device', 'sample_rate', 'recording_mode',
+                'sound_device', 'gain', 'sample_rate', 'recording_mode',
                 'silence_duration', 'min_duration'
             ],
             'post_processing': [

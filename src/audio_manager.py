@@ -1,8 +1,8 @@
 import threading
 import numpy as np
-import sounddevice as sd
+import pyaudio
 import webrtcvad
-from collections import deque, namedtuple
+from collections import namedtuple
 from queue import Queue, Empty
 
 from config_manager import ConfigManager
@@ -19,6 +19,7 @@ class AudioManager:
         self.state = AudioManagerState.STOPPED
         self.recording_queue = Queue()
         self.thread = None
+        self.pyaudio = pyaudio.PyAudio()
 
     def start(self):
         if self.state == AudioManagerState.STOPPED:
@@ -34,6 +35,7 @@ class AudioManager:
                 self.thread.join(timeout=2)
                 if self.thread.is_alive():
                     ConfigManager.log_print("Warning: Audio thread did not terminate gracefully.")
+        self.pyaudio.terminate()
 
     def start_recording(self, profile: Profile, session_id: str):
         self.recording_queue.put(RecordingContext(profile, session_id))
@@ -57,72 +59,55 @@ class AudioManager:
                 continue
 
     def _record_audio(self, context: RecordingContext):
-        recording_options = ConfigManager.get_section('recording_options',
-                                                      context.profile.name)
+        recording = []
+        recording_options = ConfigManager.get_section('recording_options', context.profile.name)
         sample_rate = recording_options.get('sample_rate', 16000)
-        frame_duration_ms = 30
-        frame_size = int(sample_rate * (frame_duration_ms / 1000.0))
+        gain = recording_options.get('gain', 1.0)
+        channels = 1
+        streaming_chunk_size = context.profile.streaming_chunk_size or 4096
+
+        frame_size = self._calculate_frame_size(sample_rate, streaming_chunk_size,
+                                                context.profile.is_streaming)
+        frame_duration_ms = int(frame_size / sample_rate * 1000)
         silence_duration_ms = recording_options.get('silence_duration', 900)
         silence_frames = int(silence_duration_ms / frame_duration_ms)
         recording_mode = RecordingMode[recording_options.get('recording_mode', 'PRESS_TO_TOGGLE')
                                        .upper()]
-        channels = 1
-
-        # Use the backend-suggested chunk size
-        streaming_chunk_size = context.profile.streaming_chunk_size
-
-        # If streaming_chunk_size is None or 0, fall back to a default value
-        if not streaming_chunk_size:
-            streaming_chunk_size = int(0.2 * sample_rate)  # 0.2 seconds of audio for streaming
-
-        # Skip running vad for the first 0.15 seconds to avoid mistaking keyboard noise for voice
-        initial_frames_to_skip = int(0.15 * sample_rate / frame_size)
 
         vad = None
         if recording_mode in (RecordingMode.VOICE_ACTIVITY_DETECTION, RecordingMode.CONTINUOUS):
             vad = webrtcvad.Vad(2)
-
+        # Skip running vad for the first 0.15 seconds to avoid mistaking keyboard noise for voice
+        initial_frames_to_skip = int(0.15 * sample_rate / frame_size)
         speech_detected = False
         silent_frame_count = 0
-        audio_buffer = deque(maxlen=frame_size)
-        recording = []
 
-        sound_device = recording_options.get('sound_device')
-        if sound_device == '':
-            sound_device = None
+        sound_device = self._get_sound_device(recording_options.get('sound_device'))
+        stream = self.pyaudio.open(format=pyaudio.paFloat32,
+                                   channels=channels,
+                                   rate=sample_rate,
+                                   input=True,
+                                   input_device_index=sound_device,
+                                   frames_per_buffer=frame_size)
 
-        data_ready = threading.Event()
-
-        def audio_callback(indata, frames, time, status):
-            if status:
-                ConfigManager.log_print(f"Audio callback status: {status}")
-            audio_buffer.extend(indata[:, 0])
-            data_ready.set()
-
-        with sd.InputStream(samplerate=sample_rate, channels=channels, dtype='int16',
-                            blocksize=frame_size, device=sound_device, callback=audio_callback):
+        try:
             while self.state != AudioManagerState.STOPPED and self.recording_queue.empty():
-                data_ready.wait(timeout=0.2)
-                data_ready.clear()
-
-                if len(audio_buffer) < frame_size:
-                    continue
-
-                frame = np.array(list(audio_buffer), dtype=np.int16)
-                audio_buffer.clear()
-                recording.extend(frame)
+                frame = stream.read(frame_size)
+                frame_array = self._process_audio_frame(frame, gain)
+                recording.extend(frame_array)
 
                 if context.profile.is_streaming and len(recording) >= streaming_chunk_size:
-                    arr = np.array(recording[:streaming_chunk_size], dtype=np.int16)
+                    arr = np.array(recording[:streaming_chunk_size], dtype=np.float32)
                     self._push_audio_chunk(context, arr, sample_rate, channels)
                     recording = recording[streaming_chunk_size:]
 
-                if initial_frames_to_skip > 0:
-                    initial_frames_to_skip -= 1
-                    continue
-
                 if vad:
-                    if vad.is_speech(frame.tobytes(), sample_rate):
+                    if initial_frames_to_skip > 0:
+                        initial_frames_to_skip -= 1
+                        continue
+                    # Convert to int16 for VAD
+                    int16_frame = (frame_array * 32767).astype(np.int16)
+                    if vad.is_speech(int16_frame.tobytes(), sample_rate):
                         silent_frame_count = 0
                         if not speech_detected:
                             ConfigManager.log_print("Speech detected.")
@@ -133,8 +118,12 @@ class AudioManager:
                     if speech_detected and silent_frame_count > silence_frames:
                         break
 
+        finally:
+            stream.stop_stream()
+            stream.close()
+
         if not context.profile.is_streaming:
-            audio_data = np.array(recording, dtype=np.int16)
+            audio_data = np.array(recording, dtype=np.float32)
             duration = len(audio_data) / sample_rate
 
             ConfigManager.log_print(f'Recording finished. Size: {audio_data.size} samples, '
@@ -153,8 +142,36 @@ class AudioManager:
 
         context.profile.audio_queue.put(None)  # Push sentinel value
 
+        # Notify ApplicationController of automatic termination due to silence detected by vad
         if vad and self.state != AudioManagerState.STOPPED:
             self.event_bus.emit("recording_stopped", context.session_id)
+
+    def _calculate_frame_size(self, sample_rate: int, streaming_chunk_size: int,
+                              is_streaming: bool) -> int:
+        if is_streaming:
+            valid_frame_durations = [10, 20, 30]  # in milliseconds, accepted by webrtcvad
+            for duration in sorted(valid_frame_durations, reverse=True):
+                frame_size = int(sample_rate * (duration / 1000.0))
+                if streaming_chunk_size % frame_size == 0:
+                    return frame_size
+            return int(sample_rate * 0.03)  # default to 30ms if no perfect divisor found
+        else:
+            return int(sample_rate * 0.03)  # 30ms for non-streaming
+
+    def _get_sound_device(self, device):
+        if device == '' or device is None:
+            return None
+        try:
+            return int(device)
+        except ValueError:
+            ConfigManager.log_print(f"Invalid device index: {device}. Using default.")
+            return None
+
+    def _process_audio_frame(self, frame: bytes, gain: float) -> np.ndarray:
+        frame_array = np.frombuffer(frame, dtype=np.float32).copy()
+        frame_array *= gain
+        np.clip(frame_array, -1.0, 1.0, out=frame_array)
+        return frame_array
 
     def _push_audio_chunk(self, context: RecordingContext, audio_data: np.ndarray,
                           sample_rate: int, channels: int):
@@ -168,6 +185,6 @@ class AudioManager:
 
     def cleanup(self):
         self.stop()
-        # Reset all attributes to enforce garbage collection
         self.thread = None
+        self.pyaudio = None
         self.recording_queue = None

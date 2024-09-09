@@ -51,6 +51,10 @@ profiles:
         value: null
         type: "int or null"
         description: "The numeric index of the sound device to use for recording. To find device numbers, run `python -m sounddevice`"
+      gain:
+        value: 1.0
+        type: float
+        description: "Amplification factor for the recorded audio. Values greater than 1.0 increase volume, less than 1.0 decrease it. Use cautiously as high values may cause clipping. Default is 1.0 (no change)."
       sample_rate:
         value: 16000
         type: int
