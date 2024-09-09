@@ -15,7 +15,7 @@ global_options:
   print_to_terminal:
     value: true
     type: bool
-    description: "Set to true to print the script status and transcribed text to the terminal."
+    description: "Set to true to print various logging messages to the terminal."
   show_status_window:
     value: true
     type: bool
@@ -34,7 +34,7 @@ profiles:
     activation_key:
       value: ctrl+shift+space
       type: str
-      description: "The keyboard shortcut to activate this profile. Separate keys with a '+'.\nYou can find the full list of supported keys in enums.py -> KeyCode(Enum).\nNot all input backends support all keys."
+      description: "The keyboard or mouse shortcut to activate this profile. Separate keys with a '+'.\nYou can find the full list of supported keys in enums.py -> KeyCode(Enum).\nNot all input backends support all keys.\nWarning: Check Known Issues in the readme!"
     backend_type:
       value: faster_whisper
       type: str
@@ -50,7 +50,7 @@ profiles:
       sound_device:
         value: null
         type: "int or null"
-        description: "The numeric index of the sound device to use for recording. To find device numbers, run `python -m sounddevice`"
+        description: "The numeric index of the sound device to use for recording."
       gain:
         value: 1.0
         type: float
@@ -71,7 +71,7 @@ profiles:
       silence_duration:
         value: 900
         type: int
-        description: "The duration in milliseconds to wait for silence before stopping the recording."
+        description: "The duration in milliseconds to wait for silence before stopping the recording. This is relevant only for the continuous and voice_activity_detection modes."
       min_duration:
         value: 200
         type: int
