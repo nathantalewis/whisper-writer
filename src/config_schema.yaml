@@ -17,9 +17,9 @@ global_options:
     type: bool
     description: "Set to true to print various logging messages to the terminal."
   show_status_window:
-    value: true
+    value: false
     type: bool
-    description: "Set to false to hide the status window during operation."
+    description: "Set to false to hide the status window during operation. This window might steal focus on its appearance when running under Wayland, preventing keyboard output."
   noise_on_completion:
     value: false
     type: bool
@@ -137,7 +137,7 @@ available_backends:
       type: dir_path
       description: "Path to the folder containing the model files. Leave empty to use online models."
     vad_filter:
-      value: false
+      value: true
       type: bool
       description: "Set to true to use a voice activity detection (VAD) filter to remove silence from the recording."
     condition_on_previous_text:
@@ -152,6 +152,18 @@ available_backends:
       value: null
       type: str
       description: "A string used as an initial prompt to condition the transcription."
+    use_streaming:
+      value: false
+      type: bool
+      description: "If true, use streaming mode with partial results. If false, wait for complete audio before transcribing.\nIt's recommended to enable VAD filter when using streaming because otherwise Whisper will hallucinate words in silent moments. VAD is also used for utterance detection in this mode."
+    min_transcription_interval:
+      value: 0.5
+      type: float
+      description: "Streaming Only: specifies the minimum time interval (in seconds) between consecutive transcription processes to allow for the accumulation of audio data. This determines the minimal theoretical latency, which doesn't take in account transcription time. Values lower than 0.2 are rounded to 0.2."
+    vad_silence_duration:
+      value: 2.0
+      type: float
+      description: "Streaming Only: Defines the duration (in seconds) of silence detected by voice activity detection (VAD) that triggers the end of an utterance and resets the transcription buffer."
   openai:
     model:
       value: whisper-1

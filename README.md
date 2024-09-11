@@ -16,7 +16,7 @@ WhisperWriter is a versatile speech-to-text application that leverages multiple 
 - **Various Recording Modes**: Choose from continuous, voice activity detection, press-to-toggle, or hold-to-record modes.
 - **Post-Processing**: Apply customizable post-processing scripts to refine transcription output.
 - **Multiple Output Methods**: Write to active window or implement new output handlers.
-- **Streaming Support**: VOSK backend supports real-time transcription for immediate feedback.
+- **Streaming Support**: Faster Whisper and VOSK backends support real-time transcription for immediate feedback.
 
 ### How It Works
 
@@ -227,7 +227,7 @@ You can see all reported issues and their current status in our [Issue Tracker](
 
 ## Roadmap
 Below are features I am planning to add in the near future:
-- [ ] Add streaming transcription for Whisper backend
+- [x] Add streaming transcription for Whisper backend
 - [ ] Upgrade to Qt6.
 - [ ] Create an IME module for output
 - [ ] Additional post-processing options:
