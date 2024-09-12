@@ -93,7 +93,7 @@ To set up and run the project, follow these steps:
 #### 1. Clone the repository:
 
 ```
-git clone https://github.com/savbell/whisper-writer
+git clone https://github.com/dariox1337/whisper-writer
 cd whisper-writer
 ```
 
