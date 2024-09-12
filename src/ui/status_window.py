@@ -15,8 +15,8 @@ class StatusWindow(BaseWindow):
         Initialize the status window.
         """
         super().__init__('WhisperWriter Status', 320, 120)
-        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint |
-                            Qt.WindowType.Tool | Qt.WindowType.WindowDoesNotAcceptFocus)
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint
+                            | Qt.WindowType.Tool | Qt.WindowType.WindowDoesNotAcceptFocus)
 
         status_layout = QHBoxLayout()
         status_layout.setContentsMargins(0, 0, 0, 0)
@@ -26,9 +26,11 @@ class StatusWindow(BaseWindow):
         microphone_path = os.path.join('assets', 'microphone.png')
         pencil_path = os.path.join('assets', 'pencil.png')
         self.microphone_pixmap = QPixmap(
-            microphone_path).scaled(32, 32, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            microphone_path).scaled(32, 32, Qt.AspectRatioMode.KeepAspectRatio,
+                                    Qt.TransformationMode.SmoothTransformation)
         self.pencil_pixmap = QPixmap(
-            pencil_path).scaled(32, 32, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            pencil_path).scaled(32, 32, Qt.AspectRatioMode.KeepAspectRatio,
+                                Qt.TransformationMode.SmoothTransformation)
         self.icon_label.setPixmap(self.microphone_pixmap)
         self.icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 

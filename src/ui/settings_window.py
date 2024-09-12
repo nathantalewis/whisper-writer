@@ -250,7 +250,8 @@ class SettingsWindow(QWidget):
 
         reply = QMessageBox.question(self, 'Delete Profile',
                                      f"Delete the profile '{profile_name}'?",
-                                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                     QMessageBox.StandardButton.Yes |
+                                     QMessageBox.StandardButton.No,
                                      QMessageBox.StandardButton.No)
         if reply == QMessageBox.StandardButton.Yes:
             if ConfigManager.delete_profile(profile_name):
@@ -402,7 +403,8 @@ class SettingWidget(QWidget):
     def create_checkbox(self):
         widget = QCheckBox()
         widget.setChecked(bool(self.value))
-        widget.stateChanged.connect(lambda state: self.update_config(state == Qt.CheckState.Checked))
+        widget.stateChanged.connect(lambda state: self.update_config(state ==
+                                                                     Qt.CheckState.Checked))
         return widget
 
     def create_combobox(self):
