@@ -115,6 +115,11 @@ venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+**NOTE:** VOSK is not installed by default. If you're planning to use it, additionally run:
+```
+pip install vosk
+```
+
 #### 4. Run the Python code:
 
 ```
@@ -123,6 +128,7 @@ python run.py
 
 #### 5. Configure and start WhisperWriter:
 On first run, a Settings window should appear. Once configured and saved, another window will open. Press "Start" to activate the keyboard listener. Press the activation key (`ctrl+shift+space` by default) to start recording and transcribing to the active window.
+
 
 ### Configuration Options
 
@@ -139,7 +145,7 @@ These options apply to all profiles:
 - `active_profiles`: List of active profiles. (Default: `[Default]`)
 - `input_backend`: The input backend for detecting key presses. Options: `auto`, `evdev`, `pynput`. (Default: `auto`)
 - `print_to_terminal`: Print script status and transcribed text to the terminal. (Default: `true`)
-- `show_status_window`: Show the status window during operation. (Default: `true`)
+- `show_status_window`: Show the status window during operation. (Default: `false`)
 - `noise_on_completion`: Play a noise after transcription is typed out. (Default: `false`)
 
 ### Profile Options
@@ -172,10 +178,13 @@ Each profile has the following configurable options:
 - `compute_type`: Compute type for the local Whisper model. Options: `default`, `float32`, `float16`, `int8`. (Default: `default`)
 - `device`: Device to run the local Whisper model on. Options: `auto`, `cuda`, `cpu`. (Default: `auto`)
 - `model_path`: Path to the folder containing model files. Leave empty to use online models. (Default: `null`)
-- `vad_filter`: Use voice activity detection (VAD) filter to remove silence. (Default: `false`)
+- `vad_filter`: Use voice activity detection (VAD) filter to remove silence. (Default: `true`)
 - `condition_on_previous_text`: Use previously transcribed text as a prompt for the next transcription. (Default: `true`)
 - `temperature`: Controls randomness of transcription output. Lower values make output more focused and deterministic. (Default: `0.0`)
 - `initial_prompt`: String used as an initial prompt to condition the transcription. (Default: `null`)
+- `use_streaming`: If true, use streaming mode with partial results. If false, wait for complete audio before transcribing. It's recommended to enable VAD filter when using streaming because otherwise Whisper will hallucinate words in silent moments. VAD is also used for utterance detection in this mode.
+- `min_transcription_interval`: Streaming Only: Specifies the minimum time interval (in seconds) between consecutive transcription processes to allow for the accumulation of audio data. This determines the minimal theoretical latency, which doesn't take in account transcription time. Values lower than 0.2 are rounded to 0.2. (Default: `0.5`)
+- `vad_silence_duration`: Streaming Only: Defines the duration (in seconds) of silence detected by voice activity detection (VAD) that triggers the end of an utterance and resets the transcription buffer. (Default: `2.0`)
 
 #### OpenAI
 

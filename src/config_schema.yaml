@@ -159,7 +159,7 @@ available_backends:
     min_transcription_interval:
       value: 0.5
       type: float
-      description: "Streaming Only: specifies the minimum time interval (in seconds) between consecutive transcription processes to allow for the accumulation of audio data. This determines the minimal theoretical latency, which doesn't take in account transcription time. Values lower than 0.2 are rounded to 0.2."
+      description: "Streaming Only: Specifies the minimum time interval (in seconds) between consecutive transcription processes to allow for the accumulation of audio data. This determines the minimal theoretical latency, which doesn't take in account transcription time. Values lower than 0.2 are rounded to 0.2."
     vad_silence_duration:
       value: 2.0
       type: float
