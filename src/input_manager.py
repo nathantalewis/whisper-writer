@@ -89,6 +89,7 @@ class InputManager:
             new_backend = backend_class()
             new_backend.on_input_event = self.on_input_event
             self.active_backend = new_backend
+            ConfigManager.log_print(f"Using input backend: {backend_class.__name__}")
         else:
             raise ValueError(f"Backend {backend_class.__name__} is not available")
 
