@@ -1,6 +1,6 @@
-from PyQt5.QtCore import Qt, QRectF
-from PyQt5.QtGui import QPainter, QBrush, QColor, QFont, QPainterPath, QGuiApplication
-from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QMainWindow
+from PyQt6.QtCore import Qt, QRectF
+from PyQt6.QtGui import QPainter, QBrush, QColor, QFont, QPainterPath, QGuiApplication
+from PyQt6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QMainWindow
 
 
 class BaseWindow(QMainWindow):
@@ -18,8 +18,8 @@ class BaseWindow(QMainWindow):
         Initialize the user interface.
         """
         self.setWindowTitle(title)
-        self.setWindowFlags(Qt.FramelessWindowHint)
-        self.setAttribute(Qt.WA_TranslucentBackground, True)
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setFixedSize(width, height)
 
         self.main_widget = QWidget(self)
@@ -33,8 +33,8 @@ class BaseWindow(QMainWindow):
 
         # Add the title label
         title_label = QLabel('WhisperWriter')
-        title_label.setFont(QFont('Segoe UI', 12, QFont.Bold))
-        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setFont(QFont('Segoe UI', 12))
+        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title_label.setStyleSheet("color: #404040;")
 
         # Create a widget for the close button
@@ -56,7 +56,7 @@ class BaseWindow(QMainWindow):
         """)
         close_button.clicked.connect(self.handleCloseButton)
 
-        close_button_layout.addWidget(close_button, alignment=Qt.AlignRight)
+        close_button_layout.addWidget(close_button, alignment=Qt.AlignmentFlag.AlignRight)
 
         # Add widgets to the title bar layout
         title_bar_layout.addWidget(QWidget(), 1)  # Left spacer
@@ -85,17 +85,17 @@ class BaseWindow(QMainWindow):
         """
         Allow the window to be moved by clicking and dragging anywhere on the window.
         """
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             self.is_dragging = True
-            self.start_position = event.globalPos() - self.frameGeometry().topLeft()
+            self.start_position = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
             event.accept()
 
     def mouseMoveEvent(self, event):
         """
         Move the window when dragging.
         """
-        if Qt.LeftButton and self.is_dragging:
-            self.move(event.globalPos() - self.start_position)
+        if Qt.MouseButton.LeftButton and self.is_dragging:
+            self.move(event.globalPosition().toPoint() - self.start_position)
             event.accept()
 
     def mouseReleaseEvent(self, event):
@@ -111,7 +111,7 @@ class BaseWindow(QMainWindow):
         path = QPainterPath()
         path.addRoundedRect(QRectF(self.rect()), 20, 20)
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         painter.setBrush(QBrush(QColor(255, 255, 255, 220)))
-        painter.setPen(Qt.NoPen)
+        painter.setPen(Qt.PenStyle.NoPen)
         painter.drawPath(path)

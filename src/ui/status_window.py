@@ -1,8 +1,8 @@
 import sys
 import os
-from PyQt5.QtCore import Qt, pyqtSlot
-from PyQt5.QtGui import QFont, QPixmap
-from PyQt5.QtWidgets import QApplication, QLabel, QHBoxLayout
+from PyQt6.QtCore import Qt, pyqtSlot
+from PyQt6.QtGui import QFont, QPixmap
+from PyQt6.QtWidgets import QApplication, QLabel, QHBoxLayout
 
 from ui.base_window import BaseWindow
 
@@ -15,8 +15,8 @@ class StatusWindow(BaseWindow):
         Initialize the status window.
         """
         super().__init__('WhisperWriter Status', 320, 120)
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool |
-                            Qt.WindowDoesNotAcceptFocus)
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint |
+                            Qt.WindowType.Tool | Qt.WindowType.WindowDoesNotAcceptFocus)
 
         status_layout = QHBoxLayout()
         status_layout.setContentsMargins(0, 0, 0, 0)
@@ -26,11 +26,11 @@ class StatusWindow(BaseWindow):
         microphone_path = os.path.join('assets', 'microphone.png')
         pencil_path = os.path.join('assets', 'pencil.png')
         self.microphone_pixmap = QPixmap(
-            microphone_path).scaled(32, 32, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            microphone_path).scaled(32, 32, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
         self.pencil_pixmap = QPixmap(
-            pencil_path).scaled(32, 32, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            pencil_path).scaled(32, 32, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
         self.icon_label.setPixmap(self.microphone_pixmap)
-        self.icon_label.setAlignment(Qt.AlignCenter)
+        self.icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.status_label = QLabel('Recording...')
         self.status_label.setFont(QFont('Segoe UI', 12))
@@ -58,7 +58,7 @@ class StatusWindow(BaseWindow):
         y = screen_height - window_height - 120
 
         self.move(x, y)
-        self.setAttribute(Qt.WA_ShowWithoutActivating)
+        self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         super().show()
 
     @pyqtSlot(str)

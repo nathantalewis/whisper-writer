@@ -228,7 +228,7 @@ You can see all reported issues and their current status in our [Issue Tracker](
 ## Roadmap
 Below are features I am planning to add in the near future:
 - [x] Add streaming transcription for Whisper backend
-- [ ] Upgrade to Qt6.
+- [x] Upgrade to Qt6.
 - [ ] Create an IME module for output
 - [ ] Additional post-processing options:
   - [ ] Simple word replacement (e.g. "gonna" -> "going to" or "smiley face" -> "😊")

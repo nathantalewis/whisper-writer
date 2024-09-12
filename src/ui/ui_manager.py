@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication, QMessageBox
+from PyQt6.QtWidgets import QApplication, QMessageBox
 
 from ui.main_window import MainWindow
 from ui.settings_window import SettingsWindow
@@ -14,18 +14,16 @@ class UIManager:
     status) and the system tray icon. This class serves as the central point for UI-related
     operations and events.
     """
-    def __init__(self, app, event_bus):
-        """Initialize the UIManager with the QApplication instance and event bus."""
+    def __init__(self, event_bus):
+        """Initialize the UIManager with the event bus."""
         self.event_bus = event_bus
-        self.app = app
-        self.app.setQuitOnLastWindowClosed(False)
         self.is_closing = False
         self.show_status_window = False
 
         self.main_window = MainWindow()
         self.settings_window = SettingsWindow()
         self.status_window = StatusWindow()
-        self.tray_icon = TrayIcon(self.app)
+        self.tray_icon = TrayIcon()
 
         self.setup_connections()
 
@@ -94,4 +92,4 @@ class UIManager:
 
     def run_event_loop(self):
         """Start and run the Qt event loop, returning the exit code when finished."""
-        return self.app.exec_()
+        return QApplication.instance().exec()

@@ -1,9 +1,9 @@
 import os
-from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QTabWidget, QGroupBox, QGridLayout,
+from PyQt6.QtWidgets import (QWidget, QHBoxLayout, QTabWidget, QGroupBox, QGridLayout,
                              QLabel, QLineEdit, QComboBox, QCheckBox, QPushButton, QFileDialog,
                              QScrollArea, QToolButton, QMessageBox, QVBoxLayout, QInputDialog)
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QIcon, QIntValidator, QDoubleValidator
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QIcon, QIntValidator, QDoubleValidator
 
 from config_manager import ConfigManager
 
@@ -39,7 +39,7 @@ class SettingsWindow(QWidget):
             self.tabs.addTab(profile_tab, profile_name)
 
         # Add profile button
-        self.tabs.setCornerWidget(self.create_add_profile_button(), Qt.TopRightCorner)
+        self.tabs.setCornerWidget(self.create_add_profile_button(), Qt.Corner.TopRightCorner)
 
     def create_global_tab(self):
         tab = QScrollArea()
@@ -193,7 +193,8 @@ class SettingsWindow(QWidget):
             'backend': [
                 'model', 'compute_type', 'device', 'model_path', 'vad_filter',
                 'condition_on_previous_text', 'base_url', 'api_key', 'temperature',
-                'initial_prompt'
+                'initial_prompt', 'use_streaming', 'min_transcription_interval',
+                'vad_silence_duration'
             ]
         }
 
@@ -249,8 +250,9 @@ class SettingsWindow(QWidget):
 
         reply = QMessageBox.question(self, 'Delete Profile',
                                      f"Delete the profile '{profile_name}'?",
-                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if reply == QMessageBox.Yes:
+                                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                     QMessageBox.StandardButton.No)
+        if reply == QMessageBox.StandardButton.Yes:
             if ConfigManager.delete_profile(profile_name):
                 for i in range(self.tabs.count()):
                     if self.tabs.tabText(i) == profile_name:
@@ -332,9 +334,9 @@ class SettingWidget(QWidget):
         help_button.clicked.connect(self.show_help)
 
         if isinstance(self.input_widget, CheckboxListWidget):
-            layout.addWidget(self.label, 0, 0, Qt.AlignTop)
-            layout.addWidget(self.input_widget, 0, 1, Qt.AlignTop)  # Align to top
-            layout.addWidget(help_button, 0, 2, Qt.AlignTop)
+            layout.addWidget(self.label, 0, 0, Qt.AlignmentFlag.AlignTop)
+            layout.addWidget(self.input_widget, 0, 1, Qt.AlignmentFlag.AlignTop)
+            layout.addWidget(help_button, 0, 2, Qt.AlignmentFlag.AlignTop)
 
             # Adjust the internal layout of CheckboxListWidget
             checkbox_layout = self.input_widget.layout()
@@ -400,7 +402,7 @@ class SettingWidget(QWidget):
     def create_checkbox(self):
         widget = QCheckBox()
         widget.setChecked(bool(self.value))
-        widget.stateChanged.connect(self.update_config)
+        widget.stateChanged.connect(lambda state: self.update_config(state == Qt.CheckState.Checked))
         return widget
 
     def create_combobox(self):

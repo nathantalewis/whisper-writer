@@ -1,8 +1,8 @@
 import os
 import sys
-from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QPushButton, QHBoxLayout
-from PyQt5.QtCore import pyqtSignal
+from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import QPushButton, QHBoxLayout
+from PyQt6.QtCore import pyqtSignal
 
 from ui.base_window import BaseWindow
 
