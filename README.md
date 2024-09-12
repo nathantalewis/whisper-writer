@@ -121,13 +121,13 @@ The following packages are optional.
 Transcription backends (you need at least one):
 ```
 # For local Whisper models
-pip install faster-whisper
+pip install faster-whisper==1.0.3
 
 # For cloud Whisper models, using OpenAI API
-pip install openai
+pip install openai==1.44.1
 
 # For local VOSK models
-pip install vosk
+pip install vosk==0.3.45
 ```
 
 Input backend for Linux (if you don't have it installed system-wide):
