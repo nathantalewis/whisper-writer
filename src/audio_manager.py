@@ -49,12 +49,13 @@ class AudioManager:
     def _audio_thread(self):
         while self.state != AudioManagerState.STOPPED:
             try:
-                context = self.recording_queue.get(timeout=0.5)
+                context = self.recording_queue.get(timeout=0.2)
                 if context is None:
                     continue  # Skip this iteration, effectively stopping the current recording
                 self.state = AudioManagerState.RECORDING
                 self._record_audio(context)
-                self.state = AudioManagerState.IDLE
+                if self.state != AudioManagerState.STOPPED:
+                    self.state = AudioManagerState.IDLE
             except Empty:
                 continue
 

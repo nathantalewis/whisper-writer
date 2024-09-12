@@ -124,6 +124,7 @@ class Profile:
 
     def cleanup(self):
         """Clean up resources and reset attributes for garbage collection."""
+        self.recording_stopped()
         self.finish_transcription()
         if self.transcription_manager:
             self.transcription_manager.cleanup()
