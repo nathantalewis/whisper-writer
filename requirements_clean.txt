@@ -1,11 +1,15 @@
 PyQt6
-evdev
-faster-whisper
 numpy
 scipy
-openai
 pyaudio
 pynput
 soundfile
 webrtcvad
+setuptools  # Required by webrtcvad
 pyyaml
+
+# Optional dependencies
+# openai
+# faster-whisper
+# vosk
+# evdev

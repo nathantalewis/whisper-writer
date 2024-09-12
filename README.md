@@ -111,14 +111,30 @@ venv\Scripts\activate
 
 #### 3. Install the required packages:
 
+Base packages:
 ```
 pip install -r requirements.txt
 ```
 
-**NOTE:** VOSK is not installed by default. If you're planning to use it, additionally run:
+The following packages are optional.
+
+Transcription backends (you need at least one):
 ```
+# For local Whisper models
+pip install faster-whisper
+
+# For cloud Whisper models, using OpenAI API
+pip install openai
+
+# For local VOSK models
 pip install vosk
 ```
+
+Input backend for Linux (if you don't have it installed system-wide):
+```
+pip install evdev
+```
+
 
 #### 4. Run the Python code:
 
