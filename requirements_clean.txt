@@ -1,0 +1,11 @@
+PyQt6
+evdev
+faster-whisper
+librosa
+numpy
+openai
+pyaudio
+pynput
+soundfile
+webrtcvad
+pyyaml
