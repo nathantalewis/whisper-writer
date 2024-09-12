@@ -24,6 +24,8 @@ def load_env(env_file='.env'):
                     os.environ[key] = value
 
 
+print('Starting WhisperWriter...')
+
 # Load environment variables
 load_env()
 

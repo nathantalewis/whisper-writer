@@ -1,7 +1,9 @@
 import numpy as np
+import soundfile as sf
 import os
 import io
 from typing import Dict, Any
+from scipy import signal
 
 from transcription_backend.transcription_backend_base import TranscriptionBackendBase
 from config_manager import ConfigManager
@@ -20,10 +22,9 @@ class OpenAIBackend(TranscriptionBackendBase):
     def initialize(self, options: Dict[str, Any]):
         try:
             from openai import OpenAI
-            import soundfile as sf
         except ImportError as e:
             raise RuntimeError(f"Failed to import required modules: {e}. "
-                               f"Make sure OpenAI and soundfile are installed.")
+                               f"Make sure OpenAI is installed.")
 
         self.OpenAI = OpenAI
         self.config = options
@@ -31,7 +32,8 @@ class OpenAIBackend(TranscriptionBackendBase):
         base_url = self.config.get('base_url') or 'https://api.openai.com/v1'
 
         if not api_key:
-            raise RuntimeError(f"OpenAI API key not found. Please set it in the configuration or as an environment variable.")
+            raise RuntimeError("OpenAI API key not found. "
+                               "Please set it in the configuration or as an environment variable.")
 
         try:
             self.client = self.OpenAI(api_key=api_key, base_url=base_url)
@@ -45,16 +47,12 @@ class OpenAIBackend(TranscriptionBackendBase):
         if not self.client:
             return {'raw_text': '', 'language': language, 'error': "OpenAI client not initialized"}
 
-        try:
-            import soundfile as sf
-        except ImportError:
-            return {'raw_text': '', 'language': language, 'error': "soundfile library not found"}
-
         # Prepare audio data
         try:
             audio_data = self._prepare_audio_data(audio_data, sample_rate, channels)
         except Exception as e:
-            return {'raw_text': '', 'language': language, 'error': f"Error preparing audio data: {str(e)}"}
+            return {'raw_text': '', 'language': language,
+                    'error': f"Error preparing audio data: {str(e)}"}
 
         # Convert numpy array to WAV file
         byte_io = io.BytesIO()
@@ -85,13 +83,14 @@ class OpenAIBackend(TranscriptionBackendBase):
                             channels: int) -> np.ndarray:
         # OpenAI expects 16kHz mono audio
         if sample_rate != 16000 or channels != 1:
-            try:
-                import librosa
-                audio_data = librosa.resample(audio_data, orig_sr=sample_rate, target_sr=16000)
-                if channels > 1:
-                    audio_data = librosa.to_mono(audio_data.T)
-            except ImportError:
-                raise RuntimeError("librosa is required for audio resampling. Please install it.")
+            # Resample to 16kHz
+            if sample_rate != 16000:
+                number_of_samples = round(len(audio_data) * 16000 / sample_rate)
+                audio_data = signal.resample(audio_data, number_of_samples)
+
+            # Convert to mono if necessary
+            if channels > 1:
+                audio_data = np.mean(audio_data, axis=1)
 
         # Ensure audio_data is in the correct format (float32, range [-1, 1])
         if audio_data.dtype == np.float32 and np.abs(audio_data).max() <= 1.0:

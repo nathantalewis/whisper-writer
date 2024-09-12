@@ -1,8 +1,8 @@
 PyQt6
 evdev
 faster-whisper
-librosa
 numpy
+scipy
 openai
 pyaudio
 pynput
