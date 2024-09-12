@@ -49,7 +49,7 @@ WhisperWriter's modular design allows for easy extension with new backends, inpu
 Before you can run this app, you'll need to have the following software installed:
 
 - Git: [https://git-scm.com/downloads](https://git-scm.com/downloads)
-- Python `3.11`: [https://www.python.org/downloads/](https://www.python.org/downloads/)
+- Python `3.12`: [https://www.python.org/downloads/](https://www.python.org/downloads/)
 
 If you want to run `faster-whisper` on your GPU, you'll also need to install the following NVIDIA libraries:
 
