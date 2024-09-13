@@ -174,7 +174,7 @@ Each profile has the following configurable options:
 
 #### Recording Options
 
-- `sound_device`: Numeric index of the sound device for recording. Run `python -m sounddevice` to find device numbers. (Default: `null`)
+- `sound_device`: The numeric index of the sound device to use for recording. Run `python list_audio_devices.py` to to find device numbers. (Default: `null`)
 - `sample_rate`: Sample rate in Hz for recording. (Default: `16000`)
 - `recording_mode`: Recording mode to use. Options: `continuous`, `voice_activity_detection`, `press_to_toggle`, `hold_to_record`. (Default: `continuous`)
 - `silence_duration`: Duration in milliseconds to wait for silence before stopping recording. (Default: `900`)

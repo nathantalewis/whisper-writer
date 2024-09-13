@@ -220,13 +220,34 @@ class AudioManager:
             return int(sample_rate * 0.03)  # 30ms for non-streaming
 
     def _get_sound_device(self, device):
+        def get_default_input_device_index():
+            return self.pyaudio.get_default_input_device_info()['index']
+
+        def get_device_info(index):
+            info = self.pyaudio.get_device_info_by_index(index)
+            host_api = self.pyaudio.get_host_api_info_by_index(info['hostApi'])['name']
+            return f"{info['name']} - {host_api}"
+
         if device == '' or device is None:
-            return None
+            default_index = get_default_input_device_index()
+            device_info = get_device_info(default_index)
+            ConfigManager.log_print(f"Using default input device: {device_info} "
+                                    f"(index: {default_index})")
+            return default_index
+
         try:
-            return int(device)
-        except ValueError:
+            device_index = int(device)
+            device_info = get_device_info(device_index)
+            ConfigManager.log_print(f"Using specified input device: {device_info} "
+                                    f"(index: {device_index})")
+            return device_index
+        except (ValueError, IOError):
             ConfigManager.log_print(f"Invalid device index: {device}. Using default.")
-            return None
+            default_index = get_default_input_device_index()
+            device_info = get_device_info(default_index)
+            ConfigManager.log_print(f"Selected default input device: {device_info} "
+                                    f"(index: {default_index})")
+            return default_index
 
     def _process_audio_frame(self, frame: bytes, gain: float) -> np.ndarray:
         frame_array = np.frombuffer(frame, dtype=np.float32).copy()
