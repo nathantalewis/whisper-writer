@@ -65,110 +65,147 @@ class AudioManager:
                 continue
 
     def _record_audio(self, context: RecordingContext):
-        recording = []
         recording_options = ConfigManager.get_section('recording_options', context.profile.name)
-        sample_rate = recording_options.get('sample_rate', 16000)
-        gain = recording_options.get('gain', 1.0)
-        channels = 1
-        streaming_chunk_size = context.profile.streaming_chunk_size or 4096
+        audio_config = self._prepare_audio_config(context, recording_options)
 
-        frame_size = self._calculate_frame_size(sample_rate, streaming_chunk_size,
-                                                context.profile.is_streaming)
-        frame_duration_ms = int(frame_size / sample_rate * 1000)
-        silence_duration_ms = recording_options.get('silence_duration', 900)
-        silence_frames = int(silence_duration_ms / frame_duration_ms)
-        recording_mode = RecordingMode[recording_options.get('recording_mode', 'PRESS_TO_TOGGLE')
-                                       .upper()]
-
-        vad = None
-        if recording_mode in (RecordingMode.VOICE_ACTIVITY_DETECTION, RecordingMode.CONTINUOUS):
-            vad = webrtcvad.Vad(2)
-        # Skip running vad for the first 0.15 seconds to avoid mistaking keyboard noise for voice
-        initial_frames_to_skip = int(0.15 * sample_rate / frame_size)
-        speech_detected = False
-        silent_frame_count = 0
-
-        sound_device = self._get_sound_device(recording_options.get('sound_device'))
-        stream = self.pyaudio.open(format=pyaudio.paFloat32,
-                                   channels=channels,
-                                   rate=sample_rate,
-                                   input=True,
-                                   input_device_index=sound_device,
-                                   frames_per_buffer=frame_size)
-
-        save_debug_audio = recording_options.get('save_debug_audio', False)
-
-        debug_wav_file = None
-        if save_debug_audio:
-            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"{context.profile.name}_{timestamp}.wav"
-            debug_wav_file = wave.open(os.path.join(self.debug_recording_dir, filename), 'wb')
-            debug_wav_file.setnchannels(channels)
-            debug_wav_file.setsampwidth(2)  # 16-bit audio
-            debug_wav_file.setframerate(sample_rate)
+        stream = self._setup_audio_stream(audio_config)
+        debug_wav_file = (self._setup_debug_file(context, audio_config) if
+                          audio_config['save_debug_audio'] else None)
 
         try:
-            while self.state != AudioManagerState.STOPPED and self.recording_queue.empty():
-                frame = stream.read(frame_size)
-                frame_array = self._process_audio_frame(frame, gain)
-                recording.extend(frame_array)
-
-                if save_debug_audio:
-                    # Convert float32 to int16 for WAV file
-                    int16_frame = (frame_array * 32767).astype(np.int16)
-                    debug_wav_file.writeframes(int16_frame.tobytes())
-
-                if context.profile.is_streaming and len(recording) >= streaming_chunk_size:
-                    arr = np.array(recording[:streaming_chunk_size], dtype=np.float32)
-                    self._push_audio_chunk(context, arr, sample_rate, channels)
-                    recording = recording[streaming_chunk_size:]
-
-                if vad:
-                    if initial_frames_to_skip > 0:
-                        initial_frames_to_skip -= 1
-                        continue
-                    # Convert to int16 for VAD
-                    int16_frame = (frame_array * 32767).astype(np.int16)
-                    if vad.is_speech(int16_frame.tobytes(), sample_rate):
-                        silent_frame_count = 0
-                        if not speech_detected:
-                            ConfigManager.log_print("Speech detected.")
-                            speech_detected = True
-                    else:
-                        silent_frame_count += 1
-
-                    if speech_detected and silent_frame_count > silence_frames:
-                        break
-
+            recording, speech_detected = self._capture_audio(context, audio_config,
+                                                             stream, debug_wav_file)
         finally:
-            stream.stop_stream()
-            stream.close()
-            if debug_wav_file:
-                debug_wav_file.close()
+            self._cleanup_audio_resources(stream, debug_wav_file)
 
         if not context.profile.is_streaming:
-            audio_data = np.array(recording, dtype=np.float32)
-            duration = len(audio_data) / sample_rate
-
-            ConfigManager.log_print(f'Recording finished. Size: {audio_data.size} samples, '
-                                    f'Duration: {duration:.2f} seconds')
-
-            min_duration_ms = recording_options.get('min_duration', 200)
-
-            if vad and not speech_detected:
-                ConfigManager.log_print('Discarded because no speech has been detected.')
-                self.event_bus.emit("audio_discarded", context.session_id)
-            elif (duration * 1000) >= min_duration_ms:
-                self._push_audio_chunk(context, audio_data, sample_rate, channels)
-            else:
-                ConfigManager.log_print('Discarded due to being too short.')
-                self.event_bus.emit("audio_discarded", context.session_id)
+            self._process_non_streaming_audio(context, audio_config, recording, speech_detected)
 
         context.profile.audio_queue.put(None)  # Push sentinel value
 
-        # Notify ApplicationController of automatic termination due to silence detected by vad
-        if vad and self.state != AudioManagerState.STOPPED:
+        # Notify ApplicationController of automatic termination due to silence detected by VAD
+        if audio_config['use_vad'] and self.state != AudioManagerState.STOPPED:
             self.event_bus.emit("recording_stopped", context.session_id)
+
+    def _prepare_audio_config(self, context: RecordingContext, recording_options):
+        sample_rate = recording_options.get('sample_rate', 16000)
+        streaming_chunk_size = context.profile.streaming_chunk_size or 4096
+        frame_size = self._calculate_frame_size(sample_rate, streaming_chunk_size,
+                                                context.profile.is_streaming)
+        silence_duration_ms = recording_options.get('silence_duration', 900)
+        recording_mode = RecordingMode[recording_options.get('recording_mode',
+                                                             'PRESS_TO_TOGGLE').upper()]
+
+        return {
+            'sample_rate': sample_rate,
+            'gain': recording_options.get('gain', 1.0),
+            'channels': 1,
+            'streaming_chunk_size': streaming_chunk_size,
+            'frame_size': frame_size,
+            'silence_frames': int(silence_duration_ms / (frame_size / sample_rate * 1000)),
+            'sound_device': self._get_sound_device(recording_options.get('sound_device')),
+            'save_debug_audio': recording_options.get('save_debug_audio', False),
+            'use_vad': recording_mode in (RecordingMode.VOICE_ACTIVITY_DETECTION,
+                                          RecordingMode.CONTINUOUS)
+        }
+
+    def _setup_audio_stream(self, audio_config):
+        return self.pyaudio.open(format=pyaudio.paFloat32,
+                                 channels=audio_config['channels'],
+                                 rate=audio_config['sample_rate'],
+                                 input=True,
+                                 input_device_index=audio_config['sound_device'],
+                                 frames_per_buffer=audio_config['frame_size'])
+
+    def _setup_debug_file(self, context, audio_config):
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{context.profile.name}_{timestamp}.wav"
+        debug_wav_file = wave.open(os.path.join(self.debug_recording_dir, filename), 'wb')
+        debug_wav_file.setnchannels(audio_config['channels'])
+        debug_wav_file.setsampwidth(2)  # 16-bit audio
+        debug_wav_file.setframerate(audio_config['sample_rate'])
+        return debug_wav_file
+
+    def _capture_audio(self, context, audio_config, stream, debug_wav_file):
+        recording = []
+        silent_frame_count = 0
+        speech_detected = False
+        sample_rate = audio_config['sample_rate']
+        # Skip running VAD for the initial 0.15 seconds to avoid mistaking keyboard noise for voice
+        initial_frames_to_skip = int(0.15 * sample_rate / audio_config['frame_size'])
+        vad = webrtcvad.Vad(2) if audio_config['use_vad'] else None
+
+        while self.state != AudioManagerState.STOPPED and self.recording_queue.empty():
+            frame = stream.read(audio_config['frame_size'])
+            frame_array = self._process_audio_frame(frame, audio_config['gain'])
+            recording.extend(frame_array)
+
+            if debug_wav_file:
+                int16_frame = (frame_array * 32767).astype(np.int16)
+                debug_wav_file.writeframes(int16_frame.tobytes())
+
+            if context.profile.is_streaming:
+                self._handle_streaming(context, audio_config, recording)
+
+            if vad:
+                if initial_frames_to_skip > 0:
+                    initial_frames_to_skip -= 1
+                    continue
+                # Convert to int16 for VAD
+                int16_frame = (frame_array * 32767).astype(np.int16)
+                if vad.is_speech(int16_frame.tobytes(), sample_rate):
+                    silent_frame_count = 0
+                    if not speech_detected:
+                        ConfigManager.log_print("Speech detected.")
+                        speech_detected = True
+                else:
+                    silent_frame_count += 1
+
+                if speech_detected and silent_frame_count > audio_config['silence_frames']:
+                    break
+
+        return recording, speech_detected
+
+    def _handle_streaming(self, context, audio_config, recording):
+        chunk_size = audio_config['streaming_chunk_size']
+        sample_rate = audio_config['sample_rate']
+        while len(recording) >= chunk_size:
+            # Extract a full chunk
+            chunk = np.array(recording[:chunk_size], dtype=np.float32)
+
+            # Send the chunk for processing
+            self._push_audio_chunk(context, chunk, sample_rate, audio_config['channels'])
+
+            # Remove the processed chunk from the recording
+            del recording[:chunk_size]
+        # At this point, 'recording' contains less than a full chunk,
+        # which will be processed in the next iteration
+
+    def _cleanup_audio_resources(self, stream, debug_wav_file):
+        stream.stop_stream()
+        stream.close()
+        if debug_wav_file:
+            debug_wav_file.close()
+
+    def _process_non_streaming_audio(self, context, audio_config, recording, speech_detected):
+        audio_data = np.array(recording, dtype=np.float32)
+        duration = len(audio_data) / audio_config['sample_rate']
+
+        ConfigManager.log_print(f'Recording finished. Size: {audio_data.size} samples, '
+                                f'Duration: {duration:.2f} seconds')
+
+        min_duration_ms = ConfigManager.get_value(
+            f'recording_options.{context.profile.name}.min_duration', 200)
+
+        if audio_config['use_vad'] and not speech_detected:
+            ConfigManager.log_print('Discarded because no speech has been detected.')
+            self.event_bus.emit("audio_discarded", context.session_id)
+        elif (duration * 1000) >= min_duration_ms:
+            self._push_audio_chunk(context, audio_data,
+                                   audio_config['sample_rate'], audio_config['channels'])
+        else:
+            ConfigManager.log_print('Discarded due to being too short.')
+            self.event_bus.emit("audio_discarded", context.session_id)
 
     def _calculate_frame_size(self, sample_rate: int, streaming_chunk_size: int,
                               is_streaming: bool) -> int:
