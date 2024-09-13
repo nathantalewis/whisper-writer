@@ -1,6 +1,6 @@
 import sys
 import os
-from PyQt6.QtCore import Qt, pyqtSlot
+from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QPixmap
 from PyQt6.QtWidgets import QApplication, QLabel, QHBoxLayout
 
@@ -63,7 +63,6 @@ class StatusWindow(BaseWindow):
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         super().show()
 
-    @pyqtSlot(str)
     def show_message(self, message):
         """
         Update the status window based on the given status.
