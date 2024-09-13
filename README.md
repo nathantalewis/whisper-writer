@@ -241,7 +241,7 @@ d) Consider using mouse buttons (e.g., mouse_forward, mouse_back) for "Hold to R
 
 **Issue:** The status window grabs focus and interferes with output when using the Wayland display server.
 
-**Workaround:** Consider disabling the status window by turning off the "Show status window" option in the settings.
+**Workaround:** Consider using desktop notifications or disabling status updates by choosing the corresponding option in "Status update mode" in the settings.
 
 ### General Recommendations
 
