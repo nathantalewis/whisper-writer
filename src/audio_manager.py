@@ -2,6 +2,9 @@ import threading
 import numpy as np
 import pyaudio
 import webrtcvad
+import wave
+import os
+import datetime
 from collections import namedtuple
 from queue import Queue, Empty
 
@@ -20,6 +23,8 @@ class AudioManager:
         self.recording_queue = Queue()
         self.thread = None
         self.pyaudio = pyaudio.PyAudio()
+        self.debug_recording_dir = 'debug_audio'
+        os.makedirs(self.debug_recording_dir, exist_ok=True)
 
     def start(self):
         if self.state == AudioManagerState.STOPPED:
@@ -91,11 +96,27 @@ class AudioManager:
                                    input_device_index=sound_device,
                                    frames_per_buffer=frame_size)
 
+        save_debug_audio = recording_options.get('save_debug_audio', False)
+
+        debug_wav_file = None
+        if save_debug_audio:
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"{context.profile.name}_{timestamp}.wav"
+            debug_wav_file = wave.open(os.path.join(self.debug_recording_dir, filename), 'wb')
+            debug_wav_file.setnchannels(channels)
+            debug_wav_file.setsampwidth(2)  # 16-bit audio
+            debug_wav_file.setframerate(sample_rate)
+
         try:
             while self.state != AudioManagerState.STOPPED and self.recording_queue.empty():
                 frame = stream.read(frame_size)
                 frame_array = self._process_audio_frame(frame, gain)
                 recording.extend(frame_array)
+
+                if save_debug_audio:
+                    # Convert float32 to int16 for WAV file
+                    int16_frame = (frame_array * 32767).astype(np.int16)
+                    debug_wav_file.writeframes(int16_frame.tobytes())
 
                 if context.profile.is_streaming and len(recording) >= streaming_chunk_size:
                     arr = np.array(recording[:streaming_chunk_size], dtype=np.float32)
@@ -122,6 +143,8 @@ class AudioManager:
         finally:
             stream.stop_stream()
             stream.close()
+            if debug_wav_file:
+                debug_wav_file.close()
 
         if not context.profile.is_streaming:
             audio_data = np.array(recording, dtype=np.float32)
