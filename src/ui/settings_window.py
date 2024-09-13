@@ -185,7 +185,7 @@ class SettingsWindow(QWidget):
             ],
             'recording_options': [
                 'sound_device', 'gain', 'sample_rate', 'recording_mode',
-                'silence_duration', 'min_duration'
+                'silence_duration', 'min_duration', 'save_debug_audio'
             ],
             'post_processing': [
                 'writing_key_press_delay', 'keyboard_simulator', 'enabled_scripts'

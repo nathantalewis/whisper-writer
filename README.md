@@ -161,7 +161,7 @@ These options apply to all profiles:
 - `active_profiles`: List of active profiles. (Default: `[Default]`)
 - `input_backend`: The input backend for detecting key presses. Options: `auto`, `evdev`, `pynput`. (Default: `auto`)
 - `print_to_terminal`: Print script status and transcribed text to the terminal. (Default: `true`)
-- `show_status_window`: Show the status window during operation. (Default: `false`)
+- `status_update_mode`: Choose how to display status updates. 'None' disables all updates, 'Window' shows a status window, and 'Notification' uses desktop notifications. (Default: `Window`)
 - `noise_on_completion`: Play a noise after transcription is typed out. (Default: `false`)
 
 ### Profile Options
@@ -179,6 +179,7 @@ Each profile has the following configurable options:
 - `recording_mode`: Recording mode to use. Options: `continuous`, `voice_activity_detection`, `press_to_toggle`, `hold_to_record`. (Default: `continuous`)
 - `silence_duration`: Duration in milliseconds to wait for silence before stopping recording. (Default: `900`)
 - `min_duration`: Minimum duration in milliseconds for a recording to be processed. (Default: `100`)
+- `save_debug_audio`: Save recorded audio to files for debugging purposes. (Default: `false`)
 
 #### Post-processing Options
 
