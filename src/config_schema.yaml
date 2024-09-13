@@ -16,10 +16,14 @@ global_options:
     value: true
     type: bool
     description: "Set to true to print various logging messages to the terminal."
-  show_status_window:
-    value: false
-    type: bool
-    description: "Set to false to hide the status window during operation. This window might steal focus on its appearance when running under Wayland, preventing keyboard output."
+  status_update_mode:
+    value: Window
+    type: str
+    options:
+      - None
+      - Window
+      - Notification
+    description: "Choose how to display status updates. 'None' disables all updates, 'Window' shows a status window, and 'Notification' uses desktop notifications. The 'Window' mode might steal focus on its appearance when running under Wayland, preventing keyboard output."
   noise_on_completion:
     value: false
     type: bool
@@ -80,7 +84,7 @@ profiles:
       writing_key_press_delay:
         value: 0.005
         type: float
-        description: "The delay in seconds between each key press when writing the transcribed text."
+        description: "The delay in seconds between each key press when writing the transcribed text. Too short of a delay can affect typing of shifted characters (e.g. capital letters, ?, !, etc.) in uinput mode."
       keyboard_simulator:
         value: pynput
         type: str

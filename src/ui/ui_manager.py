@@ -1,4 +1,5 @@
 from PyQt6.QtWidgets import QApplication, QMessageBox
+from PyQt6.QtGui import QIcon
 
 from ui.main_window import MainWindow
 from ui.settings_window import SettingsWindow
@@ -18,7 +19,7 @@ class UIManager:
         """Initialize the UIManager with the event bus."""
         self.event_bus = event_bus
         self.is_closing = False
-        self.show_status_window = False
+        self.status_update_mode = "Window"
 
         self.main_window = MainWindow()
         self.settings_window = SettingsWindow()
@@ -44,15 +45,6 @@ class UIManager:
         self.main_window.show()
         self.tray_icon.show()
 
-    def handle_profile_state_change(self, message):
-        """Handle changes in profile states, updating the status window if necessary."""
-        ConfigManager.log_print(message)
-        if self.show_status_window:
-            if message:
-                self.show_status(message)
-            else:
-                self.hide_status()
-
     def handle_start_listening(self):
         """Handle the start listening event."""
         self.event_bus.emit("start_listening")
@@ -61,9 +53,32 @@ class UIManager:
         """Hide the main window after successful initialization."""
         self.main_window.hide_main_window()
 
-    def show_status(self, message):
+    def handle_profile_state_change(self, message):
+        """Handle changes in profile states, updating status based on the chosen mode."""
+        ConfigManager.log_print(message)
+        if self.status_update_mode == "Window":
+            self.show_status_window(message)
+        elif self.status_update_mode == "Notification":
+            self.show_notification(message)
+
+    def show_status_window(self, message):
         """Display a status message in the status window."""
-        self.status_window.show_message(message)
+        if message:
+            self.status_window.show_message(message)
+        else:
+            self.status_window.hide()
+
+    def show_notification(self, message):
+        """Display a desktop notification."""
+        if not message:
+            message = "Finished."
+
+        self.tray_icon.tray_icon.showMessage(
+            "WhisperWriter Status",
+            message,
+            QIcon(),
+            3000
+        )
 
     def show_error_message(self, message):
         """Display an error message in a QMessageBox."""
@@ -75,10 +90,6 @@ class UIManager:
         QMessageBox.critical(self.main_window, "Initialization Error", error_message)
         self.settings_window.show()
         self.main_window.show()
-
-    def hide_status(self):
-        """Hide the status window."""
-        self.status_window.hide()
 
     def initiate_close(self):
         """Initiate the application closing process, ensuring it only happens once."""

@@ -181,7 +181,7 @@ class SettingsWindow(QWidget):
         element_order = {
             'global_options': [
                 'active_profiles', 'input_backend', 'print_to_terminal',
-                'show_status_window', 'noise_on_completion'
+                'status_update_mode', 'noise_on_completion'
             ],
             'recording_options': [
                 'sound_device', 'gain', 'sample_rate', 'recording_mode',

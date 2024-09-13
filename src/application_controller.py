@@ -137,8 +137,8 @@ class ApplicationController:
 
     def start_core_components(self):
         """Initialize and start core components like InputManager and AudioManager."""
-        self.ui_manager.show_status_window = ConfigManager.get_value(
-            'global_options.show_status_window')
+        self.ui_manager.status_update_mode = ConfigManager.get_value(
+            'global_options.status_update_mode')
         self.input_manager = InputManager(self.event_bus)
         self.audio_manager = AudioManager(self.event_bus)
         self.input_manager.start()
