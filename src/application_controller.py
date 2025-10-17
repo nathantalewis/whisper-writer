@@ -38,6 +38,9 @@ class ApplicationController:
         self.load_active_profiles()
         self.setup_connections()
 
+        # Initialize InputManager early, before Qt event loop starts
+        self.input_manager = InputManager(self.event_bus)
+
     def load_active_profiles(self):
         """Load and initialize active profiles from configuration."""
         active_profiles = ConfigManager.get_profiles(active_only=True)
@@ -106,7 +109,7 @@ class ApplicationController:
         if profile:
             del self.session_profile_map[session_id]
             # Play beep sound
-            if ConfigManager.get_value('global_options.noise_on_completion', False):
+            if ConfigManager.get_value('global_options.noise_on_completion') or False:
                 beep_file = os.path.join('assets', 'beep.wav')
                 play_wav(beep_file)
 
@@ -130,6 +133,15 @@ class ApplicationController:
 
     def run(self):
         """Run the main application loop and return the exit code."""
+        # Start InputManager before Qt event loop to avoid conflicts
+        try:
+            self.input_manager.start()
+            print("Input manager started successfully before Qt event loop")
+        except Exception as e:
+            print(f"Warning: Could not start input manager: {e}")
+            import traceback
+            traceback.print_exc()
+
         self.ui_manager.show_main_window()
         exit_code = self.ui_manager.run_event_loop()  # Run QT event loop
         self.cleanup()
@@ -139,9 +151,10 @@ class ApplicationController:
         """Initialize and start core components like InputManager and AudioManager."""
         self.ui_manager.status_update_mode = ConfigManager.get_value(
             'global_options.status_update_mode')
-        self.input_manager = InputManager(self.event_bus)
+
+        # InputManager already created and started in __init__ and run()
+        # Create and start AudioManager
         self.audio_manager = AudioManager(self.event_bus)
-        self.input_manager.start()
         self.audio_manager.start()
 
         initialization_error = None

@@ -22,15 +22,21 @@ class AudioManager:
         self.state = AudioManagerState.STOPPED
         self.recording_queue = Queue()
         self.thread = None
-        self.pyaudio = pyaudio.PyAudio()
+        self.pyaudio = None  # Initialize PyAudio in the thread to avoid fork-safety issues
         self.debug_recording_dir = 'debug_audio'
         os.makedirs(self.debug_recording_dir, exist_ok=True)
 
     def start(self):
         if self.state == AudioManagerState.STOPPED:
             self.state = AudioManagerState.IDLE
-            self.thread = threading.Thread(target=self._audio_thread)
-            self.thread.start()
+            try:
+                self.thread = threading.Thread(target=self._audio_thread, daemon=True)
+                self.thread.start()
+            except Exception as e:
+                print(f"ERROR creating/starting audio thread: {e}")
+                import traceback
+                traceback.print_exc()
+                raise
 
     def stop(self):
         if self.state != AudioManagerState.STOPPED:
@@ -40,7 +46,6 @@ class AudioManager:
                 self.thread.join(timeout=2)
                 if self.thread.is_alive():
                     ConfigManager.log_print("Warning: Audio thread did not terminate gracefully.")
-        self.pyaudio.terminate()
 
     def start_recording(self, profile: Profile, session_id: str):
         self.recording_queue.put(RecordingContext(profile, session_id))
@@ -52,17 +57,26 @@ class AudioManager:
         return self.state == AudioManagerState.RECORDING
 
     def _audio_thread(self):
-        while self.state != AudioManagerState.STOPPED:
-            try:
-                context = self.recording_queue.get(timeout=0.2)
-                if context is None:
-                    continue  # Skip this iteration, effectively stopping the current recording
-                self.state = AudioManagerState.RECORDING
-                self._record_audio(context)
-                if self.state != AudioManagerState.STOPPED:
-                    self.state = AudioManagerState.IDLE
-            except Empty:
-                continue
+        # Initialize PyAudio in the thread to avoid fork-safety issues on macOS
+        self.pyaudio = pyaudio.PyAudio()
+
+        try:
+            while self.state != AudioManagerState.STOPPED:
+                try:
+                    context = self.recording_queue.get(timeout=0.2)
+                    if context is None:
+                        continue  # Skip this iteration, effectively stopping the current recording
+                    self.state = AudioManagerState.RECORDING
+                    self._record_audio(context)
+                    if self.state != AudioManagerState.STOPPED:
+                        self.state = AudioManagerState.IDLE
+                except Empty:
+                    continue
+        finally:
+            # Clean up PyAudio on thread exit
+            if self.pyaudio:
+                self.pyaudio.terminate()
+                self.pyaudio = None
 
     def _record_audio(self, context: RecordingContext):
         recording_options = ConfigManager.get_section('recording_options', context.profile.name)
@@ -194,8 +208,7 @@ class AudioManager:
         ConfigManager.log_print(f'Recording finished. Size: {audio_data.size} samples, '
                                 f'Duration: {duration:.2f} seconds')
 
-        min_duration_ms = ConfigManager.get_value(
-            f'recording_options.{context.profile.name}.min_duration', 200)
+        min_duration_ms = ConfigManager.get_value('recording_options.min_duration', context.profile.name) or 200
 
         if audio_config['use_vad'] and not speech_detected:
             ConfigManager.log_print('Discarded because no speech has been detected.')

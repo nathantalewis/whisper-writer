@@ -74,7 +74,7 @@ class PynputBackend(InputBackendBase):
 
     def _create_key_map(self):
         """Create a mapping from pynput keys to our internal KeyCode enum."""
-        return {
+        key_map = {
             # Modifier keys
             self.keyboard.Key.ctrl_l: KeyCode.CTRL_LEFT,
             self.keyboard.Key.ctrl_r: KeyCode.CTRL_RIGHT,
@@ -153,17 +153,12 @@ class PynputBackend(InputBackendBase):
             self.keyboard.Key.tab: KeyCode.TAB,
             self.keyboard.Key.backspace: KeyCode.BACKSPACE,
             self.keyboard.Key.esc: KeyCode.ESC,
-            self.keyboard.Key.insert: KeyCode.INSERT,
             self.keyboard.Key.delete: KeyCode.DELETE,
             self.keyboard.Key.home: KeyCode.HOME,
             self.keyboard.Key.end: KeyCode.END,
             self.keyboard.Key.page_up: KeyCode.PAGE_UP,
             self.keyboard.Key.page_down: KeyCode.PAGE_DOWN,
             self.keyboard.Key.caps_lock: KeyCode.CAPS_LOCK,
-            self.keyboard.Key.num_lock: KeyCode.NUM_LOCK,
-            self.keyboard.Key.scroll_lock: KeyCode.SCROLL_LOCK,
-            self.keyboard.Key.pause: KeyCode.PAUSE,
-            self.keyboard.Key.print_screen: KeyCode.PRINT_SCREEN,
 
             # Arrow keys
             self.keyboard.Key.up: KeyCode.UP,
@@ -172,7 +167,6 @@ class PynputBackend(InputBackendBase):
             self.keyboard.Key.right: KeyCode.RIGHT,
 
             # Numpad keys
-            self.keyboard.Key.num_lock: KeyCode.NUM_LOCK,
             self.keyboard.KeyCode.from_vk(96): KeyCode.NUMPAD_0,
             self.keyboard.KeyCode.from_vk(97): KeyCode.NUMPAD_1,
             self.keyboard.KeyCode.from_vk(98): KeyCode.NUMPAD_2,
@@ -215,6 +209,20 @@ class PynputBackend(InputBackendBase):
             self.mouse.Button.right: KeyCode.MOUSE_RIGHT,
             self.mouse.Button.middle: KeyCode.MOUSE_MIDDLE,
         }
+
+        # Add Windows/Linux-specific keys if available
+        if hasattr(self.keyboard.Key, 'insert'):
+            key_map[self.keyboard.Key.insert] = KeyCode.INSERT
+        if hasattr(self.keyboard.Key, 'num_lock'):
+            key_map[self.keyboard.Key.num_lock] = KeyCode.NUM_LOCK
+        if hasattr(self.keyboard.Key, 'scroll_lock'):
+            key_map[self.keyboard.Key.scroll_lock] = KeyCode.SCROLL_LOCK
+        if hasattr(self.keyboard.Key, 'pause'):
+            key_map[self.keyboard.Key.pause] = KeyCode.PAUSE
+        if hasattr(self.keyboard.Key, 'print_screen'):
+            key_map[self.keyboard.Key.print_screen] = KeyCode.PRINT_SCREEN
+
+        return key_map
 
     def on_input_event(self, event):
         """
