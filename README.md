@@ -7,7 +7,7 @@
     <img src="./assets/ww-demo-image-02.gif" alt="WhisperWriter demo gif" width="340" height="136">
 </p>
 
-> **Note**: This is a hybrid fork combining features from multiple whisper-writer forks. Based on [dariox1337/whisper-writer](https://github.com/dariox1337/whisper-writer). See [CREDITS.md](CREDITS.md) for full attribution and [TODO.md](TODO.md) for planned enhancements.
+> **Note**: This is a hybrid fork combining features from multiple whisper-writer forks. Based on [dariox1337/whisper-writer](https://github.com/dariox1337/whisper-writer). See [CREDITS.md](docs/CREDITS.md) for full attribution and [TODO.md](docs/TODO.md) for planned enhancements.
 
 WhisperWriter is a versatile speech-to-text application that leverages multiple transcription backends, including [OpenAI's Whisper model](https://openai.com/research/whisper), [Faster Whisper](https://github.com/SYSTRAN/faster-whisper/), and [VOSK](https://alphacephei.com/vosk/) to automatically transcribe audio from your microphone to the active window or other configurable outputs.
 
@@ -32,7 +32,7 @@ WhisperWriter runs in the background, waiting for configured keyboard shortcuts.
 
 A status window can optionally display the current stage of the process.
 
-For more detailed information about the application's architecture and components, please refer to the [Design Document](DESIGN.md).
+For more detailed information about the application's architecture and components, please refer to the [Design Document](docs/DESIGN.md).
 
 ### Recording Modes
 
